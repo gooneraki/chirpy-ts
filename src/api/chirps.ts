@@ -6,6 +6,9 @@ export async function handlerChirpsValidate(req: Request, res: Response) {
   type parameters = {
     body: string;
   };
+  type responseType = {
+    cleanedBody: string;
+  };
 
   const params: parameters = req.body;
 
@@ -15,7 +18,15 @@ export async function handlerChirpsValidate(req: Request, res: Response) {
     return;
   }
 
+  const badwords = ["kerfuffle", "sharbert", "fornax"];
+  const adjustedBody = params.body
+    .split(" ")
+    .map((w) => (badwords.includes(w.toLowerCase()) ? "****" : w))
+    .join(" ");
+
+  req.body = JSON.stringify({ body: adjustedBody } as parameters);
+
   respondWithJSON(res, 200, {
-    valid: true,
-  });
+    cleanedBody: adjustedBody,
+  } as responseType);
 }
