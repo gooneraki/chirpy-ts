@@ -18,11 +18,10 @@ export function middlewareLogResponse(
 }
 
 export function middlewareMetricsInc(
-  req: Request,
-  res: Response,
+  _: Request,
+  __: Response,
   next: NextFunction
 ) {
-  config.fileserverHits += 1;
-
+  config.fileServerHits++;
   next();
 }
