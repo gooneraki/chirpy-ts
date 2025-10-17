@@ -2,6 +2,27 @@ import type { Request, Response, NextFunction } from "express";
 import { config } from "../config.js";
 import { respondWithError } from "./json.js";
 
+class NotFoundError extends Error {
+  constructor(message: string) {
+    super(message);
+  }
+}
+class ForbiddenError extends Error {
+  constructor(message: string) {
+    super(message);
+  }
+}
+class UnauthorizedError extends Error {
+  constructor(message: string) {
+    super(message);
+  }
+}
+export class BadRequestError extends Error {
+  constructor(message: string) {
+    super(message);
+  }
+}
+
 export function middlewareLogResponse(
   req: Request,
   res: Response,
@@ -33,6 +54,11 @@ export function errorMiddleWare(
   res: Response,
   __: NextFunction
 ) {
+  if (err instanceof BadRequestError) {
+    respondWithError(res, 400, err.message);
+    return;
+  }
+
   let statusCode = 500;
   let message = "Something went wrong on our end";
 
