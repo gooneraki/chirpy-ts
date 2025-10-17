@@ -25,3 +25,18 @@ export function middlewareMetricsInc(
   config.fileServerHits++;
   next();
 }
+
+export function middlewareError(
+  err: Error,
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  console.log(">>>>>HEY", err);
+  if (err) {
+    console.log(JSON.stringify(err));
+    res.status(500).json({
+      error: "Something went wrong on our end",
+    });
+  }
+}
