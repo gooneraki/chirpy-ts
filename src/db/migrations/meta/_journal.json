@@ -15,6 +15,13 @@
       "when": 1760779697845,
       "tag": "0001_rich_darwin",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1760780634125,
+      "tag": "0002_panoramic_gorgon",
+      "breakpoints": true
     }
   ]
 }
