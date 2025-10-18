@@ -3,7 +3,7 @@ import type { Request, Response } from "express";
 import { respondWithJSON } from "./json.js";
 import { BadRequestError } from "./errors.js";
 import { NewChirp } from "../db/schema.js";
-import { createChirp } from "../db/queries/chirps.js";
+import { createChirp, getAllChirps } from "../db/queries/chirps.js";
 
 export async function handlerChirpsCreate(req: Request, res: Response) {
   type parameters = {
@@ -30,6 +30,16 @@ export async function handlerChirpsCreate(req: Request, res: Response) {
   }
 
   respondWithJSON(res, 201, newChirp);
+}
+
+export async function handlerChirpsList(req: Request, res: Response) {
+  try {
+    const chirps = await getAllChirps();
+
+    respondWithJSON(res, 200, chirps);
+  } catch (err) {
+    throw new Error("could not create chirp");
+  }
 }
 
 function chirpsValidate(body: string) {
