@@ -22,6 +22,13 @@
       "when": 1760780634125,
       "tag": "0002_panoramic_gorgon",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1760783651975,
+      "tag": "0003_lazy_jocasta",
+      "breakpoints": true
     }
   ]
 }

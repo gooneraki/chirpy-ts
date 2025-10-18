@@ -2,13 +2,16 @@ import type { Request, Response } from "express";
 
 import { respondWithJSON } from "./json.js";
 
+import { checkPasswordHash, hashPassword } from "../auth.js";
+
 import { NewUser } from "../db/schema.js";
-import { createUser } from "../db/queries/users.js";
-import { BadRequestError } from "./errors.js";
+import { createUser, getUser } from "../db/queries/users.js";
+import { BadRequestError, UserNotAuthenticatedError } from "./errors.js";
 
 export async function handlerUserCreate(req: Request, res: Response) {
   type parameters = {
     email: string;
+    password: string;
   };
 
   const params: parameters = req.body;
@@ -17,7 +20,10 @@ export async function handlerUserCreate(req: Request, res: Response) {
     throw new BadRequestError("Missing required fields");
   }
 
-  const newUser = await createUser({ email: params.email });
+  const newUser = await createUser({
+    email: params.email,
+    hashedPassword: await hashPassword(params.password),
+  });
 
   if (!newUser) {
     throw new Error("Could not create user");
@@ -28,5 +34,43 @@ export async function handlerUserCreate(req: Request, res: Response) {
     email: newUser.email,
     createdAt: newUser.createdAt,
     updatedAt: newUser.updatedAt,
-  } as NewUser);
+  } as Omit<NewUser, "hashedPassword">);
+}
+
+export async function handlerUserLogin(req: Request, res: Response) {
+  type parameters = {
+    email: string;
+    password: string;
+  };
+
+  const params: parameters = req.body;
+
+  if (!params.email) {
+    throw new BadRequestError("Missing required email field");
+  }
+  if (!params.password) {
+    throw new BadRequestError("Missing required password field");
+  }
+
+  const user = await getUser(params.email);
+
+  if (!user) {
+    throw new Error(`Could not find user with email ${params.email}`);
+  }
+
+  const verifyPass = await checkPasswordHash(
+    params.password,
+    user.hashedPassword
+  );
+
+  if (!verifyPass) {
+    throw new UserNotAuthenticatedError("wrong password");
+  }
+
+  respondWithJSON(res, 200, {
+    id: user.id,
+    email: user.email,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+  } as Omit<NewUser, "hashedPassword">);
 }
