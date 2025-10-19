@@ -22,23 +22,13 @@ export async function handlerChirpsCreate(req: Request, res: Response) {
 
   const params: parameters = req.body;
 
-  if (!params.body) {
-    throw new BadRequestError(`missing body: ${JSON.stringify(params)}`);
-  }
+  const token = getBearerToken(req);
+  const userId = validateJWT(token, config.jwt.secret);
 
-  const bearerToken = getBearerToken(req);
-  const userId = validateJWT(bearerToken, config.jwtSecret);
+  const cleaned = validateChirp(params.body);
+  const chirp = await createChirp({ body: cleaned, userId: userId });
 
-  const newChirp: NewChirp = await createChirp({
-    body: chirpsValidate(params.body),
-    userId,
-  });
-
-  if (!newChirp) {
-    throw new Error("could not create chirp");
-  }
-
-  respondWithJSON(res, 201, newChirp);
+  respondWithJSON(res, 201, chirp);
 }
 
 export async function handlerChirpsList(req: Request, res: Response) {
@@ -66,7 +56,7 @@ export async function handlerChirpsGet(req: Request, res: Response) {
   respondWithJSON(res, 200, chirp);
 }
 
-function chirpsValidate(body: string) {
+function validateChirp(body: string) {
   const maxChirpLength = 140;
   if (body.length > maxChirpLength) {
     throw new BadRequestError(

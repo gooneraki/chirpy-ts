@@ -5,10 +5,13 @@ import { respondWithJSON } from "./json.js";
 import { checkPasswordHash, hashPassword, makeJWT } from "../auth.js";
 
 import { NewUser } from "../db/schema.js";
-import { createUser, getUser } from "../db/queries/users.js";
+import { createUser, getUserByEmail } from "../db/queries/users.js";
 import { BadRequestError, UserNotAuthenticatedError } from "./errors.js";
 
 import { config } from "../config.js";
+
+type UserResponse = Omit<NewUser, "hashedPassword">;
+type LoginResponse = UserResponse & { token: string };
 
 export async function handlerUserCreate(req: Request, res: Response) {
   type parameters = {
@@ -41,46 +44,38 @@ export async function handlerUserCreate(req: Request, res: Response) {
 
 export async function handlerUserLogin(req: Request, res: Response) {
   type parameters = {
-    email: string;
     password: string;
-    expiresInSeconds?: number;
+    email: string;
+    expiresIn?: number;
   };
 
   const params: parameters = req.body;
 
-  if (!params.email) {
-    throw new BadRequestError("Missing required email field");
-  }
-  if (!params.password) {
-    throw new BadRequestError("Missing required password field");
-  }
-
-  const user = await getUser(params.email);
-
+  const user = await getUserByEmail(params.email);
   if (!user) {
-    throw new Error(`Could not find user with email ${params.email}`);
+    throw new UserNotAuthenticatedError("invalid username or password");
   }
 
-  const verifyPass = await checkPasswordHash(
+  const matching = await checkPasswordHash(
     params.password,
     user.hashedPassword
   );
-
-  if (!verifyPass) {
-    throw new UserNotAuthenticatedError("wrong password");
+  if (!matching) {
+    throw new UserNotAuthenticatedError("invalid username or password");
   }
 
-  const token = makeJWT(
-    user.id,
-    params.expiresInSeconds ?? 60 * 60,
-    config.jwtSecret
-  );
+  let duration = config.jwt.defaultDuration;
+  if (params.expiresIn && !(params.expiresIn > config.jwt.defaultDuration)) {
+    duration = params.expiresIn;
+  }
+
+  const accessToken = makeJWT(user.id, duration, config.jwt.secret);
 
   respondWithJSON(res, 200, {
     id: user.id,
     email: user.email,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
-    token,
-  });
+    token: accessToken,
+  } satisfies LoginResponse);
 }

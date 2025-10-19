@@ -1,9 +1,9 @@
-import { MigrationConfig } from "drizzle-orm/migrator";
+import type { MigrationConfig } from "drizzle-orm/migrator";
 
 type Config = {
   api: APIConfig;
   db: DBConfig;
-  jwtSecret: string;
+  jwt: JWTConfig;
 };
 
 type APIConfig = {
@@ -17,12 +17,18 @@ type DBConfig = {
   migrationConfig: MigrationConfig;
 };
 
+type JWTConfig = {
+  defaultDuration: number;
+  secret: string;
+  issuer: string;
+};
+
 process.loadEnvFile();
 
 function envOrThrow(key: string) {
   const value = process.env[key];
   if (!value) {
-    throw new Error(`Missing key in env: '${key}'`);
+    throw new Error(`Environment variable ${key} is not set`);
   }
   return value;
 }
@@ -32,7 +38,6 @@ const migrationConfig: MigrationConfig = {
 };
 
 export const config: Config = {
-  jwtSecret: envOrThrow("ACCESS_TOKEN_SECRET"),
   api: {
     fileServerHits: 0,
     port: Number(envOrThrow("PORT")),
@@ -41,5 +46,10 @@ export const config: Config = {
   db: {
     url: envOrThrow("DB_URL"),
     migrationConfig: migrationConfig,
+  },
+  jwt: {
+    defaultDuration: 60 * 60, // 1 hour in seconds
+    secret: envOrThrow("JWT_SECRET"),
+    issuer: "chirpy",
   },
 };
