@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { checkPasswordHash, hashPassword, makeJWT, validateJWT } from "./auth";
+import { hashPassword, checkPasswordHash, makeJWT, validateJWT } from "./auth";
+import { UserNotAuthenticatedError } from "./api/errors.js";
 
 describe("Password Hashing", () => {
   const password1 = "correctPassword123!";
@@ -16,28 +17,52 @@ describe("Password Hashing", () => {
     const result = await checkPasswordHash(password1, hash1);
     expect(result).toBe(true);
   });
+
+  it("should return false for an incorrect password", async () => {
+    const result = await checkPasswordHash("wrongPassword", hash1);
+    expect(result).toBe(false);
+  });
+
+  it("should return false when password doesn't match a different hash", async () => {
+    const result = await checkPasswordHash(password1, hash2);
+    expect(result).toBe(false);
+  });
+
+  it("should return false for an empty password", async () => {
+    const result = await checkPasswordHash("", hash1);
+    expect(result).toBe(false);
+  });
+
+  it("should return false for an invalid hash", async () => {
+    const result = await checkPasswordHash(password1, "invalidhash");
+    expect(result).toBe(false);
+  });
 });
 
-describe("JWT validation", () => {
-  const secret = "sdgfhkadhkfdhasodd";
-  const user1 = "user1-myfriend";
-  const user2 = "user2-myenemy";
+describe("JWT Functions", () => {
+  const secret = "secret";
+  const wrongSecret = "wrong_secret";
+  const userID = "some-unique-user-id";
+  let validToken: string;
 
-  let jws1: string;
-  let jws2: string;
-
-  beforeAll(async () => {
-    jws1 = await makeJWT(user1, 200, secret);
-    jws2 = await makeJWT(user2, 200, secret);
+  beforeAll(() => {
+    validToken = makeJWT(userID, 3600, secret);
   });
 
-  it("should return true for correct authentication", async () => {
-    const result = validateJWT(jws1, secret);
-    expect(result === user1).toBe(true);
+  it("should validate a valid token", () => {
+    const result = validateJWT(validToken, secret);
+    expect(result).toBe(userID);
   });
 
-  it("should return true for correct authentication", async () => {
-    const result = validateJWT(jws2, secret);
-    expect(result === user2).toBe(true);
+  it("should throw an error for an invalid token string", () => {
+    expect(() => validateJWT("invalid.token.string", secret)).toThrow(
+      UserNotAuthenticatedError
+    );
+  });
+
+  it("should throw an error when the token is signed with a wrong secret", () => {
+    expect(() => validateJWT(validToken, wrongSecret)).toThrow(
+      UserNotAuthenticatedError
+    );
   });
 });
