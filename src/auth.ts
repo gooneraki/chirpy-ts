@@ -1,8 +1,8 @@
 import argon2 from "argon2";
 import jwt from "jsonwebtoken";
 import type { JwtPayload } from "jsonwebtoken";
-
-import { UserNotAuthenticatedError } from "./api/errors.js";
+import type { Request } from "express";
+import { BadRequestError, UserNotAuthenticatedError } from "./api/errors.js";
 
 const TOKEN_ISSUER = "chirpy";
 
@@ -55,4 +55,17 @@ export function validateJWT(tokenString: string, secret: string) {
   }
 
   return decoded.sub;
+}
+
+export function getBearerToken(req: Request): string {
+  const headers = req.headers;
+
+  const authHeader = headers["authorization"];
+
+  const token = authHeader && authHeader.split(" ")[1];
+  if (!token) {
+    throw new BadRequestError("Token not found");
+  }
+
+  return token;
 }

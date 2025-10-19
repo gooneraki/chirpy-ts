@@ -3,6 +3,7 @@ import { MigrationConfig } from "drizzle-orm/migrator";
 type Config = {
   api: APIConfig;
   db: DBConfig;
+  jwtSecret: string;
 };
 
 type APIConfig = {
@@ -31,6 +32,7 @@ const migrationConfig: MigrationConfig = {
 };
 
 export const config: Config = {
+  jwtSecret: envOrThrow("ACCESS_TOKEN_SECRET"),
   api: {
     fileServerHits: 0,
     port: Number(envOrThrow("PORT")),
