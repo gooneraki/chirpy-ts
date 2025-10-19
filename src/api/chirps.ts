@@ -23,6 +23,7 @@ export async function handlerChirpsCreate(req: Request, res: Response) {
   const params: parameters = req.body;
 
   const token = getBearerToken(req);
+
   const userId = validateJWT(token, config.jwt.secret);
 
   const cleaned = validateChirp(params.body);
