@@ -15,7 +15,7 @@ import { BadRequestError, UserNotAuthenticatedError } from "./errors.js";
 
 import { config } from "../config.js";
 
-import { createRefreshToken } from "../db/queries/refreshTokens.js";
+import { saveRefreshToken } from "../db/queries/refreshTokens.js";
 
 type UserResponse = Omit<NewUser, "hashedPassword">;
 type LoginResponse = UserResponse & { token: string; refreshToken: string };
@@ -53,7 +53,6 @@ export async function handlerUserLogin(req: Request, res: Response) {
   type parameters = {
     password: string;
     email: string;
-    expiresIn?: number;
   };
 
   const params: parameters = req.body;
@@ -76,15 +75,12 @@ export async function handlerUserLogin(req: Request, res: Response) {
     config.jwt.defaultDuration,
     config.jwt.secret
   );
-  const refreshTokenString = makeRefreshToken();
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + 60);
+  const refreshToken = makeRefreshToken();
 
-  const refreshToken = await createRefreshToken({
-    token: refreshTokenString,
-    userId: user.id,
-    expiresAt,
-  });
+  const saved = await saveRefreshToken(user.id, refreshToken);
+  if (!saved) {
+    throw new UserNotAuthenticatedError("could not save refresh token");
+  }
 
   respondWithJSON(res, 200, {
     id: user.id,
@@ -92,6 +88,6 @@ export async function handlerUserLogin(req: Request, res: Response) {
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
     token: accessToken,
-    refreshToken: refreshToken.token,
+    refreshToken: refreshToken,
   } satisfies LoginResponse);
 }

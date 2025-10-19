@@ -1,15 +1,20 @@
 import { db } from "../index.js";
 import { eq } from "drizzle-orm";
-import { NewRefreshToken, refreshTokens } from "../schema.js";
+import { refreshTokens } from "../schema.js";
+import { config } from "../../config.js";
 
-export async function createRefreshToken(refreshToken: NewRefreshToken) {
-  const [result] = await db
+export async function saveRefreshToken(userID: string, token: string) {
+  const rows = await db
     .insert(refreshTokens)
-    .values(refreshToken)
-    .onConflictDoNothing()
+    .values({
+      userId: userID,
+      token: token,
+      expiresAt: new Date(Date.now() + config.jwt.refreshDuration),
+      revokedAt: null,
+    })
     .returning();
 
-  return result;
+  return rows.length > 0;
 }
 
 export async function getTokenByToken(token: string) {
