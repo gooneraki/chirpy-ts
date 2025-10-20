@@ -21,7 +21,7 @@ import { config } from "./config.js";
 import {
   handlerUserCreate,
   handlerUserLogin,
-  handlerUserUpdate,
+  handlerUsersUpdate,
 } from "./api/users.js";
 import { handlerRefresh, handlerRevoke } from "./api/refresh.js";
 
@@ -59,7 +59,7 @@ app.post("/api/users", (req, res, next) => {
   Promise.resolve(handlerUserCreate(req, res)).catch(next);
 });
 app.put("/api/users", (req, res, next) => {
-  Promise.resolve(handlerUserUpdate(req, res)).catch(next);
+  Promise.resolve(handlerUsersUpdate(req, res)).catch(next);
 });
 app.post("/api/login", (req, res, next) => {
   Promise.resolve(handlerUserLogin(req, res)).catch(next);

@@ -24,19 +24,19 @@ export async function deleteUsers() {
   await db.delete(users);
 }
 
-export async function updateUserCredentials(
-  userId: string,
+export async function updateUser(
+  id: string,
   email: string,
   hashedPassword: string
 ) {
-  const rows = await db
+  const [result] = await db
     .update(users)
-    .set({ email, hashedPassword })
-    .where(eq(users.id, userId))
+    .set({
+      email: email,
+      hashedPassword: hashedPassword,
+    })
+    .where(eq(users.id, id))
     .returning();
 
-  if (rows.length === 0) {
-    return;
-  }
-  return rows[0];
+  return result;
 }
