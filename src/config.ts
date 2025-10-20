@@ -4,6 +4,9 @@ type Config = {
   api: APIConfig;
   db: DBConfig;
   jwt: JWTConfig;
+  webhooks: {
+    polkaKey: string;
+  };
 };
 
 type APIConfig = {
@@ -39,6 +42,9 @@ const migrationConfig: MigrationConfig = {
 };
 
 export const config: Config = {
+  webhooks: {
+    polkaKey: envOrThrow("POLKA_KEY"),
+  },
   api: {
     fileServerHits: 0,
     port: Number(envOrThrow("PORT")),
