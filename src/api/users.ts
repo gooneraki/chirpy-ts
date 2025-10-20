@@ -4,13 +4,19 @@ import { respondWithJSON } from "./json.js";
 
 import {
   checkPasswordHash,
+  getBearerToken,
   hashPassword,
   makeJWT,
   makeRefreshToken,
+  validateJWT,
 } from "../auth.js";
 
 import { NewUser } from "../db/schema.js";
-import { createUser, getUserByEmail } from "../db/queries/users.js";
+import {
+  createUser,
+  getUserByEmail,
+  updateUserCredentials,
+} from "../db/queries/users.js";
 import { BadRequestError, UserNotAuthenticatedError } from "./errors.js";
 
 import { config } from "../config.js";
@@ -90,4 +96,37 @@ export async function handlerUserLogin(req: Request, res: Response) {
     token: accessToken,
     refreshToken: refreshToken,
   } satisfies LoginResponse);
+}
+
+export async function handlerUserUpdate(req: Request, res: Response) {
+  type parameters = {
+    email: string;
+    password: string;
+  };
+
+  const params: parameters = req.body;
+
+  if (!params.email || !params.password) {
+    throw new BadRequestError("Missing required fields");
+  }
+
+  const token = getBearerToken(req);
+  const userId = validateJWT(token, config.jwt.secret);
+
+  const user = await updateUserCredentials(
+    userId,
+    params.email,
+    await hashPassword(params.password)
+  );
+
+  if (!user) {
+    throw new Error("could not update user credentials");
+  }
+
+  respondWithJSON(res, 200, {
+    id: user.id,
+    email: user.email,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+  } as Omit<NewUser, "hashedPassword">);
 }
