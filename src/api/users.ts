@@ -135,7 +135,6 @@ export async function handlerUsersUpdate(req: Request, res: Response) {
 }
 
 export async function handlerPolkaUpgrade(req: Request, res: Response) {
-  console.log("RERERERE");
   type parameters = {
     event: string;
     data: {
@@ -149,8 +148,6 @@ export async function handlerPolkaUpgrade(req: Request, res: Response) {
     throw new BadRequestError("Missing required fields");
   }
 
-  console.log("api key", getAPIKey(req));
-  console.log("config.webhooks.polkaKey", config.webhooks.polkaKey);
   if (getAPIKey(req) !== config.webhooks.polkaKey) {
     throw new UserNotAuthenticatedError("bad polka key");
   }

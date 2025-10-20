@@ -5,9 +5,8 @@ import {
   BadRequestError,
   NotFoundError,
   UserForbiddenError,
-  UserNotAuthenticatedError,
 } from "./errors.js";
-import { NewChirp } from "../db/schema.js";
+
 import {
   createChirp,
   deleteChirpById,
@@ -37,9 +36,14 @@ export async function handlerChirpsCreate(req: Request, res: Response) {
 export async function handlerChirpsList(req: Request, res: Response) {
   const queryParams = req.query;
   const authorId = queryParams["authorId"];
+  const sortParam = queryParams["sort"];
+  if (sortParam && sortParam !== "asc" && sortParam !== "desc") {
+    throw new BadRequestError("bad sort argument");
+  }
+  const sort = sortParam ?? "asc";
 
   try {
-    const chirps = await getAllChirps(authorId as string | undefined);
+    const chirps = await getAllChirps(sort, authorId as string | undefined);
 
     respondWithJSON(res, 200, chirps);
   } catch (err) {
