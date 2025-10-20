@@ -40,3 +40,18 @@ export async function updateUser(
 
   return result;
 }
+
+export async function updateChirpMembership(
+  userId: string,
+  isChirpyRed: boolean
+) {
+  const rows = await db
+    .update(users)
+    .set({ isChirpyRed })
+    .where(eq(users.id, userId))
+    .returning();
+  if (rows.length === 0) {
+    return;
+  }
+  return rows[0];
+}

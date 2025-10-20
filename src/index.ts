@@ -23,6 +23,7 @@ import {
   handlerUserCreate,
   handlerUserLogin,
   handlerUsersUpdate,
+  handlerPolkaUpgrade,
 } from "./api/users.js";
 import { handlerRefresh, handlerRevoke } from "./api/refresh.js";
 
@@ -75,6 +76,10 @@ app.post("/api/refresh", (req, res, next) => {
 
 app.post("/api/revoke", (req, res, next) => {
   Promise.resolve(handlerRevoke(req, res)).catch(next);
+});
+
+app.post("/api/polka/webhooks", (req, res, next) => {
+  Promise.resolve(handlerPolkaUpgrade(req, res)).catch(next);
 });
 
 app.use(errorMiddleWare);

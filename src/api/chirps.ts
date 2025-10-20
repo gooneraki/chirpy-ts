@@ -58,6 +58,7 @@ export async function handlerChirpsGet(req: Request, res: Response) {
 
   respondWithJSON(res, 200, chirp);
 }
+
 export async function handlerChirpsDelete(req: Request, res: Response) {
   const { chirpID } = req.params;
   if (!chirpID) {

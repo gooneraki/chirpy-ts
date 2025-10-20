@@ -12,8 +12,17 @@ import {
 } from "../auth.js";
 
 import { NewUser } from "../db/schema.js";
-import { createUser, getUserByEmail, updateUser } from "../db/queries/users.js";
-import { BadRequestError, UserNotAuthenticatedError } from "./errors.js";
+import {
+  createUser,
+  getUserByEmail,
+  updateChirpMembership,
+  updateUser,
+} from "../db/queries/users.js";
+import {
+  BadRequestError,
+  NotFoundError,
+  UserNotAuthenticatedError,
+} from "./errors.js";
 
 import { config } from "../config.js";
 
@@ -48,7 +57,8 @@ export async function handlerUserCreate(req: Request, res: Response) {
     email: newUser.email,
     createdAt: newUser.createdAt,
     updatedAt: newUser.updatedAt,
-  } as Omit<NewUser, "hashedPassword">);
+    isChirpyRed: newUser.isChirpyRed,
+  } as UserResponse);
 }
 
 export async function handlerUserLogin(req: Request, res: Response) {
@@ -91,6 +101,7 @@ export async function handlerUserLogin(req: Request, res: Response) {
     updatedAt: user.updatedAt,
     token: accessToken,
     refreshToken: refreshToken,
+    isChirpyRed: user.isChirpyRed,
   } satisfies LoginResponse);
 }
 
@@ -118,5 +129,33 @@ export async function handlerUsersUpdate(req: Request, res: Response) {
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
     email: user.email,
+    isChirpyRed: user.isChirpyRed,
   } satisfies UserResponse);
+}
+
+export async function handlerPolkaUpgrade(req: Request, res: Response) {
+  type parameters = {
+    event: string;
+    data: {
+      userId: string;
+    };
+  };
+
+  const params: parameters = req.body;
+
+  if (!params.event || !params.data || !params.data.userId) {
+    throw new BadRequestError("Missing required fields");
+  }
+
+  if (params.event !== "user.upgraded") {
+    respondWithJSON(res, 204, "");
+    return;
+  }
+
+  const user = await updateChirpMembership(params.data.userId, true);
+  if (!user) {
+    throw new NotFoundError("could not update user membership");
+  }
+
+  respondWithJSON(res, 204, "");
 }
