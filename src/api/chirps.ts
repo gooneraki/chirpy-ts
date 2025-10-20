@@ -35,12 +35,15 @@ export async function handlerChirpsCreate(req: Request, res: Response) {
 }
 
 export async function handlerChirpsList(req: Request, res: Response) {
+  const queryParams = req.query;
+  const authorId = queryParams["authorId"];
+
   try {
-    const chirps = await getAllChirps();
+    const chirps = await getAllChirps(authorId as string | undefined);
 
     respondWithJSON(res, 200, chirps);
   } catch (err) {
-    throw new Error("could not create chirp");
+    throw new Error("could not list chirps");
   }
 }
 
