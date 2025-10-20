@@ -4,11 +4,13 @@ import { respondWithJSON } from "./json.js";
 import {
   BadRequestError,
   NotFoundError,
+  UserForbiddenError,
   UserNotAuthenticatedError,
 } from "./errors.js";
 import { NewChirp } from "../db/schema.js";
 import {
   createChirp,
+  deleteChirpById,
   getAllChirps,
   getChirpById,
 } from "../db/queries/chirps.js";
@@ -55,6 +57,29 @@ export async function handlerChirpsGet(req: Request, res: Response) {
   }
 
   respondWithJSON(res, 200, chirp);
+}
+export async function handlerChirpsDelete(req: Request, res: Response) {
+  const { chirpID } = req.params;
+  if (!chirpID) {
+    throw new BadRequestError("no chirpID found in params");
+  }
+
+  const chirp = await getChirpById(chirpID);
+
+  if (!chirp) {
+    throw new NotFoundError(`chirp with id ${chirpID} not found`);
+  }
+
+  const token = getBearerToken(req);
+  const sub = validateJWT(token, config.jwt.secret);
+
+  if (sub !== chirp.userId) {
+    throw new UserForbiddenError("user cannot delete this chirp");
+  }
+
+  await deleteChirpById(chirpID);
+
+  respondWithJSON(res, 204, {});
 }
 
 function validateChirp(body: string) {

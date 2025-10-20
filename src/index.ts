@@ -12,6 +12,7 @@ import {
   handlerChirpsCreate,
   handlerChirpsGet,
   handlerChirpsList,
+  handlerChirpsDelete,
 } from "./api/chirps.js";
 
 import postgres from "postgres";
@@ -53,6 +54,9 @@ app.get("/api/chirps", (req, res, next) => {
 });
 app.get("/api/chirps/:chirpID", (req, res, next) => {
   Promise.resolve(handlerChirpsGet(req, res)).catch(next);
+});
+app.delete("/api/chirps/:chirpID", (req, res, next) => {
+  Promise.resolve(handlerChirpsDelete(req, res)).catch(next);
 });
 
 app.post("/api/users", (req, res, next) => {
