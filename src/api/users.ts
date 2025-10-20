@@ -1,109 +1,43 @@
 import type { Request, Response } from "express";
 
+import { createUser, updateUser } from "../db/queries/users.js";
+import { BadRequestError } from "./errors.js";
 import { respondWithJSON } from "./json.js";
-
-import {
-  checkPasswordHash,
-  getAPIKey,
-  getBearerToken,
-  hashPassword,
-  makeJWT,
-  makeRefreshToken,
-  validateJWT,
-} from "../auth.js";
-
-import { NewUser } from "../db/schema.js";
-import {
-  createUser,
-  getUserByEmail,
-  updateChirpMembership,
-  updateUser,
-} from "../db/queries/users.js";
-import {
-  BadRequestError,
-  NotFoundError,
-  UserNotAuthenticatedError,
-} from "./errors.js";
-
+import { NewUser } from "src/db/schema.js";
+import { getBearerToken, hashPassword, validateJWT } from "../auth.js";
 import { config } from "../config.js";
 
-import { saveRefreshToken } from "../db/queries/refreshTokens.js";
+export type UserResponse = Omit<NewUser, "hashedPassword">;
 
-type UserResponse = Omit<NewUser, "hashedPassword">;
-type LoginResponse = UserResponse & { token: string; refreshToken: string };
-
-export async function handlerUserCreate(req: Request, res: Response) {
+export async function handlerUsersCreate(req: Request, res: Response) {
   type parameters = {
     email: string;
     password: string;
   };
-
   const params: parameters = req.body;
 
-  if (!params.email) {
+  if (!params.password || !params.email) {
     throw new BadRequestError("Missing required fields");
   }
 
-  const newUser = await createUser({
-    email: params.email,
-    hashedPassword: await hashPassword(params.password),
-  });
+  const hashedPassword = await hashPassword(params.password);
 
-  if (!newUser) {
+  const user = await createUser({
+    email: params.email,
+    hashedPassword,
+  } satisfies NewUser);
+
+  if (!user) {
     throw new Error("Could not create user");
   }
 
   respondWithJSON(res, 201, {
-    id: newUser.id,
-    email: newUser.email,
-    createdAt: newUser.createdAt,
-    updatedAt: newUser.updatedAt,
-    isChirpyRed: newUser.isChirpyRed,
-  } as UserResponse);
-}
-
-export async function handlerUserLogin(req: Request, res: Response) {
-  type parameters = {
-    password: string;
-    email: string;
-  };
-
-  const params: parameters = req.body;
-
-  const user = await getUserByEmail(params.email);
-  if (!user) {
-    throw new UserNotAuthenticatedError("invalid username or password");
-  }
-
-  const matching = await checkPasswordHash(
-    params.password,
-    user.hashedPassword
-  );
-  if (!matching) {
-    throw new UserNotAuthenticatedError("invalid username or password");
-  }
-
-  const accessToken = makeJWT(
-    user.id,
-    config.jwt.defaultDuration,
-    config.jwt.secret
-  );
-  const refreshToken = makeRefreshToken();
-
-  const saved = await saveRefreshToken(user.id, refreshToken);
-  if (!saved) {
-    throw new UserNotAuthenticatedError("could not save refresh token");
-  }
-
-  respondWithJSON(res, 200, {
     id: user.id,
     email: user.email,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
-    token: accessToken,
-    refreshToken: refreshToken,
     isChirpyRed: user.isChirpyRed,
-  } satisfies LoginResponse);
+  } satisfies UserResponse);
 }
 
 export async function handlerUsersUpdate(req: Request, res: Response) {
@@ -132,35 +66,4 @@ export async function handlerUsersUpdate(req: Request, res: Response) {
     email: user.email,
     isChirpyRed: user.isChirpyRed,
   } satisfies UserResponse);
-}
-
-export async function handlerPolkaUpgrade(req: Request, res: Response) {
-  type parameters = {
-    event: string;
-    data: {
-      userId: string;
-    };
-  };
-
-  const params: parameters = req.body;
-
-  if (!params.event || !params.data || !params.data.userId) {
-    throw new BadRequestError("Missing required fields");
-  }
-
-  if (getAPIKey(req) !== config.webhooks.polkaKey) {
-    throw new UserNotAuthenticatedError("bad polka key");
-  }
-
-  if (params.event !== "user.upgraded") {
-    respondWithJSON(res, 204, "");
-    return;
-  }
-
-  const user = await updateChirpMembership(params.data.userId, true);
-  if (!user) {
-    throw new NotFoundError("could not update user membership");
-  }
-
-  respondWithJSON(res, 204, "");
 }

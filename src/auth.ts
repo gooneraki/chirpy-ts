@@ -59,18 +59,18 @@ export function validateJWT(tokenString: string, secret: string) {
   return decoded.sub;
 }
 
-export function getBearerToken(req: Request, apiKey: string = "Bearer") {
+export function getBearerToken(req: Request) {
   const authHeader = req.get("Authorization");
   if (!authHeader) {
     throw new UserNotAuthenticatedError("Malformed authorization header");
   }
 
-  return extractBearerToken(authHeader, apiKey);
+  return extractBearerToken(authHeader);
 }
 
-export function extractBearerToken(header: string, apiKey: string = "Bearer") {
+export function extractBearerToken(header: string) {
   const splitAuth = header.split(" ");
-  if (splitAuth.length < 2 || splitAuth[0] !== apiKey) {
+  if (splitAuth.length < 2 || splitAuth[0] !== "Bearer") {
     throw new BadRequestError("Malformed authorization header");
   }
   return splitAuth[1];
@@ -81,5 +81,18 @@ export function makeRefreshToken() {
 }
 
 export function getAPIKey(req: Request) {
-  return getBearerToken(req, "ApiKey");
+  const authHeader = req.get("Authorization");
+  if (!authHeader) {
+    throw new UserNotAuthenticatedError("Malformed authorization header");
+  }
+
+  return extractApiKey(authHeader);
+}
+
+export function extractApiKey(header: string) {
+  const splitAuth = header.split(" ");
+  if (splitAuth.length < 2 || splitAuth[0] !== "ApiKey") {
+    throw new BadRequestError("Malformed authorization header");
+  }
+  return splitAuth[1];
 }

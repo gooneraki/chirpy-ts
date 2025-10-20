@@ -8,5 +8,6 @@ export async function handlerMetrics(_: Request, res: Response) {
     <h1>Welcome, Chirpy Admin</h1>
     <p>Chirpy has been visited ${config.api.fileServerHits} times!</p>
   </body>
-</html>`);
+</html>
+`);
 }

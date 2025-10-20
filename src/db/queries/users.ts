@@ -1,5 +1,5 @@
-import { db } from "../index.js";
 import { eq } from "drizzle-orm";
+import { db } from "../index.js";
 import { NewUser, users } from "../schema.js";
 
 export async function createUser(user: NewUser) {
@@ -8,20 +8,16 @@ export async function createUser(user: NewUser) {
     .values(user)
     .onConflictDoNothing()
     .returning();
-
   return result;
 }
 
-export async function getUserByEmail(email: string) {
-  const rows = await db.select().from(users).where(eq(users.email, email));
-  if (rows.length === 0) {
-    return;
-  }
-  return rows[0];
+export async function reset() {
+  await db.delete(users);
 }
 
-export async function deleteUsers() {
-  await db.delete(users);
+export async function getUserByEmail(email: string) {
+  const [result] = await db.select().from(users).where(eq(users.email, email));
+  return result;
 }
 
 export async function updateUser(
@@ -41,17 +37,14 @@ export async function updateUser(
   return result;
 }
 
-export async function updateChirpMembership(
-  userId: string,
-  isChirpyRed: boolean
-) {
-  const rows = await db
+export async function upgradeChirpyRed(id: string) {
+  const [result] = await db
     .update(users)
-    .set({ isChirpyRed })
-    .where(eq(users.id, userId))
+    .set({
+      isChirpyRed: true,
+    })
+    .where(eq(users.id, id))
     .returning();
-  if (rows.length === 0) {
-    return;
-  }
-  return rows[0];
+
+  return result;
 }
